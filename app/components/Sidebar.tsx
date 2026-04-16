@@ -20,6 +20,10 @@ interface SidebarProps {
   selectedCategoryId: string | null;
   selectedSubCategoryId: string | null;
   inboxCount: number;
+  allUniqueTags: string[];
+  selectedTags: string[];
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
   onSelectNote: (noteId: string) => void;
   onSelectCategory: (categoryId: string) => void;
   onSelectSubCategory: (subCategoryId: string) => void;
@@ -51,6 +55,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentNoteId,
   selectedCategoryId,
   selectedSubCategoryId,
+  inboxCount,
+  allUniqueTags,
+  selectedTags,
+  onToggleTag,
+  onClearTags,
   onSelectNote,
   onSelectCategory,
   onSelectSubCategory,
@@ -832,6 +841,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </div>
+
+      {/* Tags Section */}
+      {sidebarOpen && allUniqueTags.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">Tags</span>
+            {selectedTags.length > 0 && (
+              <button 
+                onClick={onClearTags}
+                className="text-[10px] text-stone-500 hover:text-stone-700"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {allUniqueTags.map(tag => {
+              const isSelected = selectedTags.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onToggleTag(tag)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors border ${
+                    isSelected 
+                      ? 'bg-indigo-100 text-indigo-700 border-indigo-200 shadow-sm' 
+                      : 'bg-white/60 text-stone-500 border-stone-200/50 hover:bg-white hover:text-stone-700 hover:border-stone-300'
+                  }`}
+                >
+                  #{tag}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Bottom Section with Settings and More */}
       <div className={`absolute bottom-0 left-0 right-0 p-3 z-20 bg-[#DFEBF6] border-t border/60 ${!sidebarOpen && 'flex justify-center'}`}>

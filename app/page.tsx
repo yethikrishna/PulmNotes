@@ -73,6 +73,7 @@ export default function Home() {
   const [openNoteIds, setOpenNoteIds] = useState<string[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedSubCategoryId, setSelectedSubCategoryId] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [isReadMode, setIsReadMode] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -273,6 +274,14 @@ export default function Home() {
     setNotes(notes.map((n) =>
       n.id === noteId
         ? { ...n, title, updatedAt: new Date() }
+        : n
+    ));
+  };
+
+  const handleUpdateTags = (noteId: string, tags: string[]) => {
+    setNotes(notes.map((n) =>
+      n.id === noteId
+        ? { ...n, tags, updatedAt: new Date() }
         : n
     ));
   };
@@ -881,6 +890,16 @@ export default function Home() {
           selectedCategoryId={selectedCategoryId}
           selectedSubCategoryId={selectedSubCategoryId}
           inboxCount={inboxCount}
+          allUniqueTags={allUniqueTags}
+          selectedTags={selectedTags}
+          onToggleTag={(tag) => {
+            setSelectedTags(prev => 
+              prev.includes(tag) 
+                ? prev.filter(t => t !== tag)
+                : [...prev, tag]
+            );
+          }}
+          onClearTags={() => setSelectedTags([])}
           onSelectNote={handleSelectNote}
           onSelectCategory={handleSelectCategory}
           onSelectSubCategory={handleSelectSubCategory}
@@ -946,6 +965,7 @@ export default function Home() {
                       assets={assets.filter(a => !a.isDeleted)}
                       onUpdateTitle={handleUpdateTitle}
                       onUpdateBlocks={handleUpdateBlocks}
+                      onUpdateTags={handleUpdateTags}
                       onOpenNote={(id) => {
                         if (id.startsWith('asset-')) {
                           handleOpenAsset(id);
@@ -961,7 +981,7 @@ export default function Home() {
               {viewMode === 'home' && (
                 <>
                   <AllNotesView
-                    notes={notes}
+                    notes={filteredNotes}
                     categories={categories}
                     onSelectNote={handleSelectNote}
                     onDeleteNote={handleDeleteNote}
@@ -974,7 +994,7 @@ export default function Home() {
                 <>
                   <TopBar viewMode={viewMode} />
                   <RecentView
-                    notes={notes}
+                    notes={filteredNotes}
                     categories={categories}
                     onSelectNote={handleSelectNote}
                     onDeleteNote={handleDeleteNote}
@@ -987,7 +1007,7 @@ export default function Home() {
                 <>
                   <TopBar viewMode={viewMode} />
                   <PinsView
-                    notes={notes}
+                    notes={filteredNotes}
                     categories={categories}
                     onSelectNote={handleSelectNote}
                     onDeleteNote={handleDeleteNote}
@@ -1000,7 +1020,7 @@ export default function Home() {
                 <>
                   <TopBar viewMode={viewMode} />
                   <BinView
-                    notes={notes}
+                    notes={notes} // Bin uses raw notes to show deleted items
                     assets={assets}
                     categories={categories}
                     onRestore={handleRestoreNote}
@@ -1025,14 +1045,14 @@ export default function Home() {
 
               {viewMode === 'graph' && (
                 <GraphView 
-                  notes={notes}
+                  notes={filteredNotes}
                   onSelectNote={handleSelectNote}
                 />
               )}
 
               {viewMode === 'inbox' && (
                 <InboxView
-                  notes={notes}
+                  notes={filteredNotes}
                   categories={categories}
                   onPromote={handlePromote}
                   onDiscard={handleDeleteNote}
@@ -1044,7 +1064,7 @@ export default function Home() {
             {/* Backlinks Panel (Only show when a note is open) */}
             {viewMode === 'library' && currentNoteId && (
               <BacklinksSidebar
-                notes={notes}
+                notes={filteredNotes}
                 currentNoteId={currentNoteId}
                 onSelectNote={handleOpenNote}
               />

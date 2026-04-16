@@ -115,6 +115,7 @@ export interface Note {
   categoryId: string;
   subCategoryId?: string;
   isPinned?: boolean;
+  tags?: string[];
   isDefault?: boolean;
   lastOpenedAt?: Date;
   createdAt: Date;
