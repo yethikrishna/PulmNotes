@@ -34,6 +34,11 @@ import {
   createReflectionStore
 } from "@/app/lib/persistence";
 import { useState, useEffect } from "react";
+import { listen } from '@tauri-apps/api/event';
+
+import { GraphView } from './components/GraphView';
+import { InboxView } from './components/InboxView';
+import { BacklinksSidebar } from './components/BacklinksSidebar';
 
 const noteStore: NoteStore = createNoteStore();
 const categoryStore: CategoryStore = createCategoryStore();
@@ -158,6 +163,33 @@ export default function Home() {
     }
   }, [assets, isLoaded]);
 
+  useEffect(() => {
+    let unlistenFn: (() => void) | undefined;
+    
+    // Only use Tauri APIs when running in the Tauri desktop environment
+    if (typeof window !== 'undefined' && window.__TAURI__) {
+      listen('note-saved', async () => {
+        const loadedNotes = await noteStore.loadNotes();
+        setNotes(loadedNotes);
+      }).then(unlisten => {
+        unlistenFn = unlisten;
+      }).catch(console.error);
+    }
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      }
+    };
+    document.addEventListener('keydown', handleGlobalKeyDown);
+
+    return () => {
+      if (unlistenFn) unlistenFn();
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, []);
+
   // Listen for remote create-asset requests from components embedded in the editor (e.g., upload nodes)
   useEffect(() => {
     const handler = async (ev: Event) => {
@@ -217,6 +249,25 @@ export default function Home() {
   const currentNote = notes.find(n => n.id === currentNoteId);
   const activeNotesCount = notes.filter(n => !n.isDeleted).length;
   const activeAssetsCount = assets.filter(a => !a.isDeleted).length;
+  
+  const uncategorizedCategory = categories.find(c => c.name === 'Uncategorized');
+  const inboxCount = notes.filter(n => n.categoryId === (uncategorizedCategory?.id || 'Uncategorized') && !n.isDeleted).length;
+
+  const handlePromote = (noteId: string, categoryId: string) => {
+    setNotes(notes.map((n) =>
+      n.id === noteId
+        ? { ...n, categoryId, updatedAt: new Date() }
+        : n
+    ));
+  };
+
+  const handleSnooze = (noteId: string) => {
+    setNotes(notes.map((n) =>
+      n.id === noteId
+        ? { ...n, isPinned: true, updatedAt: new Date() }
+        : n
+    ));
+  };
 
   const handleUpdateTitle = (noteId: string, title: string) => {
     setNotes(notes.map((n) =>
@@ -829,6 +880,7 @@ export default function Home() {
           currentNoteId={currentNoteId}
           selectedCategoryId={selectedCategoryId}
           selectedSubCategoryId={selectedSubCategoryId}
+          inboxCount={inboxCount}
           onSelectNote={handleSelectNote}
           onSelectCategory={handleSelectCategory}
           onSelectSubCategory={handleSelectSubCategory}
@@ -970,7 +1022,34 @@ export default function Home() {
                   />
                 </>
               )}
+
+              {viewMode === 'graph' && (
+                <GraphView 
+                  notes={notes}
+                  onSelectNote={handleSelectNote}
+                />
+              )}
+
+              {viewMode === 'inbox' && (
+                <InboxView
+                  notes={notes}
+                  categories={categories}
+                  onPromote={handlePromote}
+                  onDiscard={handleDeleteNote}
+                  onSnooze={handleSnooze}
+                />
+              )}
             </div>
+            
+            {/* Backlinks Panel (Only show when a note is open) */}
+            {viewMode === 'library' && currentNoteId && (
+              <BacklinksSidebar
+                notes={notes}
+                currentNoteId={currentNoteId}
+                onSelectNote={handleOpenNote}
+              />
+            )}
+            
           </div>
         </div>
       </div>
