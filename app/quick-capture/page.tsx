@@ -49,26 +49,35 @@ export default function QuickCapture() {
           const firstTextBlock = blocks.find(b => b.type === 'text' || b.type === 'h1' || b.type === 'h2' || b.type === 'h3');
           const title = firstTextBlock && firstTextBlock.content ? firstTextBlock.content.substring(0, 50) : 'Quick Note';
 
-          const newNote: Note = {
-            id: `note-${generateId()}`,
-            title,
-            blocks,
-            categoryId: '', // will be placed in Uncategorized or Inbox later
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
+          // Load categories first to find "Uncategorized", then save
+          import('@/app/lib/persistence').then(({ createCategoryStore }) => {
+            const categoryStore = createCategoryStore();
+            categoryStore.loadCategories().then(categories => {
+              const uncategorized = categories.find(c => c.name === 'Uncategorized');
+              const categoryId = uncategorized ? uncategorized.id : '';
 
-          // Save note
-          noteStore.loadNotes().then(notes => {
-            const updatedNotes = [newNote, ...notes];
-            return noteStore.saveNotes(updatedNotes);
-          }).then(() => {
-            // Tell main window to refresh
-            invoke('save_quick_note', { content: "refresh" }).catch(console.error);
-            
-            editor?.commands.clearContent();
-            getCurrentWindow().hide();
-          }).catch(console.error);
+              const newNote: Note = {
+                id: `note-${generateId()}`,
+                title,
+                blocks,
+                categoryId,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+
+              // Save note
+              return noteStore.loadNotes().then(notes => {
+                const updatedNotes = [newNote, ...notes];
+                return noteStore.saveNotes(updatedNotes);
+              });
+            }).then(() => {
+              // Tell main window to refresh
+              invoke('save_quick_note', { content: "refresh" }).catch(console.error);
+              
+              editor?.commands.clearContent();
+              getCurrentWindow().hide();
+            }).catch(console.error);
+          });
             
           return true;
         }

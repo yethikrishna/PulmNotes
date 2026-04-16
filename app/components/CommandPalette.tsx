@@ -105,6 +105,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
         <Ariakit.ComboboxPopover
           store={combobox}
+          portal={false}
           gutter={0}
           sameWidth
           className="overflow-y-auto flex-1 overscroll-contain"

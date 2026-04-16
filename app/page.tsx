@@ -160,10 +160,17 @@ export default function Home() {
   }, [assets, isLoaded]);
 
   useEffect(() => {
-    const unlistenPromise = listen('note-saved', async () => {
-      const loadedNotes = await noteStore.loadNotes();
-      setNotes(loadedNotes);
-    });
+    let unlistenFn: (() => void) | undefined;
+    
+    // Only use Tauri APIs when running in the Tauri desktop environment
+    if (typeof window !== 'undefined' && window.__TAURI__) {
+      listen('note-saved', async () => {
+        const loadedNotes = await noteStore.loadNotes();
+        setNotes(loadedNotes);
+      }).then(unlisten => {
+        unlistenFn = unlisten;
+      }).catch(console.error);
+    }
 
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -174,7 +181,7 @@ export default function Home() {
     document.addEventListener('keydown', handleGlobalKeyDown);
 
     return () => {
-      unlistenPromise.then(unlisten => unlisten());
+      if (unlistenFn) unlistenFn();
       document.removeEventListener('keydown', handleGlobalKeyDown);
     };
   }, []);
