@@ -162,10 +162,16 @@ fn run() -> tauri::Result<()> {
                     if event.state == ShortcutState::Pressed {
                         if let Some(window) = app.get_webview_window("quick-capture") {
                             if window.is_visible().unwrap_or(false) {
-                                window.hide().unwrap();
+                                if let Err(e) = window.hide() {
+                                    eprintln!("failed to hide quick-capture window: {e}");
+                                }
                             } else {
-                                window.show().unwrap();
-                                window.set_focus().unwrap();
+                                if let Err(e) = window.show() {
+                                    eprintln!("failed to show quick-capture window: {e}");
+                                }
+                                if let Err(e) = window.set_focus() {
+                                    eprintln!("failed to focus quick-capture window: {e}");
+                                }
                             }
                         }
                     }
