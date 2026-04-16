@@ -20,6 +20,10 @@ interface SidebarProps {
   selectedCategoryId: string | null;
   selectedSubCategoryId: string | null;
   inboxCount: number;
+  allUniqueTags: string[];
+  selectedTags: string[];
+  onToggleTag: (tag: string) => void;
+  onClearTags: () => void;
   onSelectNote: (noteId: string) => void;
   onSelectCategory: (categoryId: string) => void;
   onSelectSubCategory: (subCategoryId: string) => void;
@@ -51,6 +55,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentNoteId,
   selectedCategoryId,
   selectedSubCategoryId,
+  inboxCount,
+  allUniqueTags,
+  selectedTags,
+  onToggleTag,
+  onClearTags,
   onSelectNote,
   onSelectCategory,
   onSelectSubCategory,

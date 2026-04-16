@@ -117,6 +117,7 @@ export interface Note {
   isPinned?: boolean;
   isDefault?: boolean;
   lastOpenedAt?: Date;
+  tags?: string[];
   createdAt: Date;
   updatedAt: Date;
   isDeleted?: boolean;
