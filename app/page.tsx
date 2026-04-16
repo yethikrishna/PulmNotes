@@ -36,6 +36,9 @@ import {
 import { useState, useEffect } from "react";
 import { listen } from '@tauri-apps/api/event';
 
+import { GraphView } from './components/GraphView';
+import { BacklinksSidebar } from './components/BacklinksSidebar';
+
 const noteStore: NoteStore = createNoteStore();
 const categoryStore: CategoryStore = createCategoryStore();
 const subCategoryStore: SubCategoryStore = createSubCategoryStore();
@@ -998,7 +1001,24 @@ export default function Home() {
                   />
                 </>
               )}
+
+              {viewMode === 'graph' && (
+                <GraphView 
+                  notes={notes}
+                  onSelectNote={handleSelectNote}
+                />
+              )}
             </div>
+            
+            {/* Backlinks Panel (Only show when a note is open) */}
+            {viewMode === 'library' && currentNoteId && (
+              <BacklinksSidebar
+                notes={notes}
+                currentNoteId={currentNoteId}
+                onSelectNote={handleOpenNote}
+              />
+            )}
+            
           </div>
         </div>
       </div>
