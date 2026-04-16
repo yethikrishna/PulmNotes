@@ -24,9 +24,31 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const activeNotes = notes.filter(n => !n.isDeleted);
 
   const filteredNotes = searchQuery.trim()
-    ? activeNotes.filter(note => 
-        note.title.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? activeNotes.filter(note => {
+        const query = searchQuery.toLowerCase();
+        
+        // Search by title
+        if (note.title.toLowerCase().includes(query)) {
+          return true;
+        }
+        
+        // Search by block content
+        return note.blocks.some(block => {
+          // Check block content if it exists
+          if (block.content && block.content.toLowerCase().includes(query)) {
+            return true;
+          }
+          
+          // Check list items if it's a list block
+          if (block.items) {
+            return block.items.some(item => 
+              item.content && item.content.toLowerCase().includes(query)
+            );
+          }
+          
+          return false;
+        });
+      })
     : [];
 
   const combobox = Ariakit.useComboboxStore({

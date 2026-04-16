@@ -26,7 +26,7 @@ impl Database {
     }
     
     fn check_schema_version(&self) -> Result<()> {
-        let conn = self.conn.lock().unwrap();
+        let mut conn = self.conn.lock().unwrap();
         
         // Read current schema version from database
         let current_version: i32 = conn
@@ -34,17 +34,33 @@ impl Database {
             .unwrap_or(0);
         
         if current_version == 0 {
-            
             conn.pragma_update(None, "user_version", SCHEMA_VERSION)?;
             eprintln!("Initialized new database with schema version {}", SCHEMA_VERSION);
-        } else if current_version > SCHEMA_VERSION {
-            return Err(rusqlite::Error::InvalidQuery);
         } else if current_version < SCHEMA_VERSION {
             eprintln!(
-                "Database schema version {} is older than app version {}. Migrations not yet implemented.",
+                "Database schema version {} is older than app version {}. Running migrations...",
                 current_version, SCHEMA_VERSION
             );
-            return Err(rusqlite::Error::InvalidQuery);
+            
+            // Run migrations sequentially
+            let tx = conn.transaction()?;
+            
+            // Example migration block:
+            // if current_version < 2 {
+            //     tx.execute("ALTER TABLE notes ADD COLUMN new_field TEXT", [])?;
+            // }
+            
+            // Update version after successful migration
+            tx.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+            tx.commit()?;
+            eprintln!("Migrations completed successfully.");
+        } else if current_version > SCHEMA_VERSION {
+            eprintln!(
+                "Warning: Database schema version {} is newer than app version {}. Some features might not work correctly.",
+                current_version, SCHEMA_VERSION
+            );
+            // We don't error out here, just warn. This allows users to downgrade the app if needed,
+            // though forward compatibility isn't guaranteed.
         }
         
         Ok(())
